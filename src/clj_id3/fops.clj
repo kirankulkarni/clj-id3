@@ -29,3 +29,13 @@
             (not throw-exception))
       [bytes (drop size byte-seq)]
       (throw (IOException. "Reached EOF prematurely")))))
+
+
+(defn is-mp3-file?
+  ""
+  [f]
+  {:pre [(or (string? f)
+             (= (class f) File))]}
+  (if (string? f)
+    (.endsWith ^String f ".mp3")
+    (.endsWith (.getPath ^File f) ".mp3")))

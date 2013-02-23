@@ -140,10 +140,28 @@
   "Parses given byte-seq to check whether it has ID3 information.
    If it does parses it and returns ID3 info. If it does not find "
   [byte-seq]
-  (try
-    (let [[header rest-data] (cf/read-bytes byte-seq header-size)
-          id3-meta (parse-header header)
-          [id3-meta rest-data] (handle-extended-header id3-meta rest-data)]
-      (parse-frames id3-meta rest-data))
-    (catch AssertionError e
-      (println (.getMessage ^AssertionError e)))))
+  (let [[header rest-data] (cf/read-bytes byte-seq header-size)
+        id3-meta (parse-header header)
+        tag-data (first (cf/read-bytes rest-data (:tag-size id3-meta)))
+        [id3-meta rest-data] (handle-extended-header id3-meta tag-data)]
+    (parse-frames id3-meta rest-data)))
+
+
+(defn parse-mp3-file
+  [f]
+  (if (cf/is-mp3-file? f)
+    (parse (cf/lazy-byte-reader f))
+    (throw (AssertionError. "Not an MP3 file"))))
+
+
+(defn parse-directory
+  [d]
+  (let [dir-file (File. d)
+        mp3-files (filter cf/is-mp3-file? (file-seq dir-file))]
+    (map (fn [file]
+           (try
+             (parse (cf/lazy-byte-reader file))
+             (catch Throwable t
+                 (println "Failed for " (.getPath file) (.getMessage t))
+                 nil)))
+         mp3-files)))
