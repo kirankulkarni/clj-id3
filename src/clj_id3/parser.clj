@@ -3,7 +3,8 @@
   clj-id3.parser
   (:require [clj-id3.utils :as cu]
             [clj-id3.mappings :as cm]
-            [clj-id3.fops :as cf]))
+            [clj-id3.fops :as cf])
+  (:import [java.io File IOException]))
 
 (def ^:private header-size 10)
 (def ^:private extended-header-size 6)
@@ -18,6 +19,17 @@
   (reduce bit-or (map #(bit-shift-left %1 %2)
                       (reverse synchsafe-byte-seq)
                       (iterate (partial + 7) 0))))
+
+
+(defn calculate-size
+  "Hack: Because even though spec says that you have to synchsafe sizes
+   some frames do not have synchsafe sizes. So decode them as normal integers"
+  [byte-seq]
+  (if (every? #(< % 0x80) byte-seq)
+    (decode-synchsafe byte-seq)
+    (reduce bit-or (map #(bit-shift-left %1 %2)
+                        (reverse byte-seq)
+                        (iterate (partial + 8) 0)))))
 
 
 (defn parse-header
@@ -101,7 +113,7 @@
   (let [[frame-id-seq frame-size-seq
          status-flags format-flags] (cu/bucket-split header 4 4 1 1)]
     {:frame-id (cu/byte-seq->str frame-id-seq)
-     :frame-size (decode-synchsafe frame-size-seq)
+     :frame-size (calculate-size frame-size-seq)
      :status-flags status-flags
      :format-flags format-flags}))
 
