@@ -14,7 +14,7 @@
    into actual integer.
    Refer: http://en.wikipedia.org/wiki/Synchsafe"
   [synchsafe-byte-seq]
-  {:pre (every? #(< % 0x80) synchsafe-byte-seq)}
+  {:pre [(every? #(< % 0x80) synchsafe-byte-seq)]}
   (reduce bit-or (map #(bit-shift-left %1 %2)
                       (reverse synchsafe-byte-seq)
                       (iterate (partial + 7) 0))))
