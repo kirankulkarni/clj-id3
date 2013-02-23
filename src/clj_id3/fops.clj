@@ -2,20 +2,20 @@
       :author "Kiran Kulkarni <kk@helpshift.com>"}
   clj-id3.fops
   (:require [clojure.java.io :as io])
-  (:import [java.io IOException]))
+  (:import [java.io IOException InputStream File]))
 
 
 (defn lazy-byte-reader
   "Opens the file and creates a lazy-sequence of the bytes"
   [file]
   (letfn [(byte-reader
-            [rdr]
+            [ ^InputStream rdr]
             (lazy-seq
               (let [byte (.read rdr)]
                 (if (>= byte 0)
                   (cons (short (bit-and byte 0xFF)) (byte-reader rdr))
                   (do (. rdr close) nil)))))]
-    (byte-reader (io/reader file))))
+    (byte-reader (io/input-stream file))))
 
 
 
