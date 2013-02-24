@@ -7,20 +7,25 @@ A Clojure library designed to parse ID3v2 tags from mp3 files.
 clj-id3 is available as a Maven artifact via [clojars](https://clojars.org/org.clojars.kiran/clj-id3)
 
 For leiningen, add
+
     [org.clojars.kiran/clj-id3 "0.1.0"]
 
 ## Usage
 
 Parsing functions are available in `clj-id3.parser` namespace
+
     (use 'clj-id3.parser)
 
 Parsing an mp3 file using file-path
+
     (parse-mp3-file "<path to mp3 file>")
 
 Parsing an mp3 file using File object
+
     (parse-mp3-file <File object>)
 
 Parsing a directory
+
     (parse-directory "<path of directory>")
 
 ## Parsed Information
