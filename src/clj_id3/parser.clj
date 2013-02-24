@@ -22,14 +22,11 @@
 
 
 (defn calculate-size
-  "Hack: Because even though spec says that you have to synchsafe sizes
-   some frames do not have synchsafe sizes. So decode them as normal integers"
+  "Calculate size given byte-sequence"
   [byte-seq]
-  (if (every? #(< % 0x80) byte-seq)
-    (decode-synchsafe byte-seq)
-    (reduce bit-or (map #(bit-shift-left %1 %2)
-                        (reverse byte-seq)
-                        (iterate (partial + 8) 0)))))
+  (reduce bit-or (map #(bit-shift-left %1 %2)
+                      (reverse byte-seq)
+                      (iterate (partial + 8) 0))))
 
 
 (defn parse-header
@@ -108,26 +105,30 @@
 (defn parse-frame-header
   "Parse  a frame-header and returns frame-id and frame-size.
    TODO: Parse flags"
-  [header]
+  [header {:keys [major-version]}]
   {:pre [(= (count header) header-size)]}
   (let [[frame-id-seq frame-size-seq
-         status-flags format-flags] (cu/bucket-split header 4 4 1 1)]
-    {:frame-id (cu/byte-seq->str frame-id-seq)
-     :frame-size (calculate-size frame-size-seq)
+         status-flags format-flags] (cu/bucket-split header 4 4 1 1)
+         frame-id (cu/byte-seq->str frame-id-seq)
+         frame-size (if (< major-version 4)
+                      (calculate-size frame-size-seq)
+                      (decode-synchsafe frame-size-seq))]
+    {:frame-id frame-id
+     :frame-size frame-size
      :status-flags status-flags
      :format-flags format-flags}))
 
 
 (defn parse-frames
   "Parse frames and return aggregated information"
-  [{:keys [major-version minor-version]} byte-seq]
+  [{:keys [major-version minor-version] :as id3-meta} byte-seq]
   (loop [byte-seq byte-seq
          info {}]
     (if (or (empty? byte-seq)
             (zero? (first byte-seq)))
       info
       (let [[header data] (cf/read-bytes byte-seq 10)
-            frame-header (parse-frame-header header)
+            frame-header (parse-frame-header header id3-meta)
             [frame-data rest-byte-seq] (cf/read-bytes data (:frame-size frame-header))
             frame-handler-fn (frame-id->handler-fn (:frame-id frame-header) frame-eater)
             frame-map (assoc frame-header
