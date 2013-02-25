@@ -3,19 +3,18 @@
   clj-id3.utils
   )
 
-
 (defn bucket-split
-  "Splits given sequence in given bucket-sizes"
+  "Splits a collection in given buckets
+   (bucket-split '(0 1 2 3 4 5 6 7 8 9) 4 3 1 2) => [(0 1 2 3) (4 5 6) 7 (8 9)]"
   [coll & bucket-sizes]
-  {:pre [(seq bucket-sizes)]}
-  (let [coll-vector (vec coll)
-        bucket-indices (reduce #(conj %1 (+ (last %1) %2)) [0] bucket-sizes)]
-    (map #(if (= (- %2 %1) 1)
-             (get coll-vector %1)
-             (subvec coll-vector %1 %2))
-         bucket-indices
-         (rest bucket-indices))))
-
+  (first (reduce (fn [[acc coll] n]
+                   [(if (= n 1)
+                      (conj acc (first coll))
+                      (conj acc
+                            (take n coll)))
+                    (drop n coll)])
+                 [[] coll]
+                 bucket-sizes)))
 
 (defn byte-seq->str
   [byte-seq & {:keys [encoding] :or {encoding "ISO-8859-1"}}]
